@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 const commands = [
   "$ neofetch",
   "$ ip a",
@@ -9,11 +13,25 @@ const commands = [
 ];
 
 export default function Terminal() {
+  const [visible, setVisible] = useState(1);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVisible((prev) => {
+        if (prev >= commands.length) {
+          return 1;
+        }
+        return prev + 1;
+      });
+    }, 1200);
+
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <section className="mx-auto max-w-7xl px-6 py-24">
       <div className="overflow-hidden rounded-3xl border border-cyan-500/20 bg-[#0d1117] shadow-2xl">
 
-        {/* Header */}
         <div className="flex items-center gap-2 border-b border-white/10 px-5 py-3">
           <div className="h-3 w-3 rounded-full bg-red-500" />
           <div className="h-3 w-3 rounded-full bg-yellow-500" />
@@ -24,12 +42,9 @@ export default function Terminal() {
           </span>
         </div>
 
-        {/* Terminal */}
-        <div className="space-y-3 p-6 font-mono text-green-400">
-          {commands.map((cmd) => (
-            <p key={cmd}>
-              {cmd}
-            </p>
+        <div className="min-h-[320px] space-y-3 p-6 font-mono text-green-400">
+          {commands.slice(0, visible).map((cmd) => (
+            <p key={cmd}>{cmd}</p>
           ))}
 
           <span className="animate-pulse">█</span>
