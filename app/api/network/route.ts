@@ -1,31 +1,32 @@
 import { execSync } from "node:child_process";
 import { NextResponse } from "next/server";
 
-export async function GET() {
-  try {
+const isVercel = !!process.env.VERCEL;
 
+export async function GET() {
+  if (isVercel) {
+    return NextResponse.json({
+      interface: "eth0",
+      ip: "Vercel Network",
+      status: "Online",
+    });
+  }
+
+  try {
     const output = execSync("ip -4 addr show wlan0").toString();
 
     const ipMatch = output.match(/inet\s+(\d+\.\d+\.\d+\.\d+)/);
 
-    const ip = ipMatch ? ipMatch[1] : "Unavailable";
-
-
     return NextResponse.json({
       interface: "wlan0",
-      ip,
+      ip: ipMatch ? ipMatch[1] : "Unavailable",
       status: "Online",
     });
-
-
-  } catch (error) {
-
+  } catch {
     return NextResponse.json({
       interface: "wlan0",
       ip: "Unavailable",
       status: "Offline",
-      error: String(error),
     });
-
   }
 }
