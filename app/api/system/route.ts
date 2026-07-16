@@ -1,111 +1,71 @@
 import { execSync } from "node:child_process";
 import { NextResponse } from "next/server";
 
+const isVercel = !!process.env.VERCEL;
+
+function run(cmd: string, fallback = "") {
+  try {
+    return execSync(cmd).toString().trim();
+  } catch {
+    return fallback;
+  }
+}
+
 function getCPUUsage() {
   try {
-    const result = execSync(
-      "top -bn1 | grep Cpu"
-    )
+    const result = execSync("top -bn1 | grep Cpu")
       .toString()
       .trim();
 
-
-    const match = result.match(/([\d,]+)\s*id/);
+    const match = result.match(/([\d.,]+)\s*id/);
 
     if (match) {
-      const idle = parseFloat(
-        match[1].replace(",", ".")
-      );
-
+      const idle = parseFloat(match[1].replace(",", "."));
       return Math.round(100 - idle);
     }
 
     return 0;
-
   } catch {
     return 0;
   }
 }
 
-
 function getPing() {
   try {
-    const result = execSync(
-      "ping -c 1 1.1.1.1"
-    )
-      .toString();
+    const result = execSync("ping -c 1 1.1.1.1").toString();
 
-
-    const match = result.match(
-      /(?:time|waktu)[=<]([\d.]+)/
-    );
-
+    const match = result.match(/(?:time|waktu)[=<]([\d.]+)/);
 
     if (match) {
       return Math.round(Number(match[1]));
     }
 
-
     return 0;
-
   } catch {
     return 0;
   }
 }
 
-
 export async function GET() {
-  try {
-
-    const hostname = execSync("hostname")
-      .toString()
-      .trim();
-
-
-    const kernel = execSync("uname -r")
-      .toString()
-      .trim();
-
-
-    const uptime = execSync("uptime -p")
-      .toString()
-      .trim();
-
-
-    const ram = execSync("free -h | grep Mem")
-      .toString()
-      .trim();
-
-
-    const diskUsage = execSync(
-      "df / | tail -1 | awk '{print $5}'"
-    )
-      .toString()
-      .trim()
-      .replace("%","");
-
-
-    const cpu = getCPUUsage();
-
-    const ping = getPing();
-
-
+  if (isVercel) {
     return NextResponse.json({
-      hostname,
-      kernel,
-      uptime,
-      ram,
-      diskUsage,
-      cpu,
-      ping,
+      hostname: "Vercel",
+      kernel: "Serverless",
+      uptime: "Online",
+      ram: "Managed by Vercel",
+      diskUsage: 0,
+      cpu: 0,
+      ping: 0,
     });
-
-
-  } catch(error){
-
-    return NextResponse.json({
-      error:String(error)
-    });
-
   }
+
+  return NextResponse.json({
+    hostname: run("hostname"),
+    kernel: run("uname -r"),
+    uptime: run("uptime -p"),
+    ram: run("free -h | grep Mem"),
+    diskUsage: run("df / | tail -1 | awk '{print $5}'").replace("%", ""),
+    cpu: getCPUUsage(),
+    ping: getPing(),
+  });
 }
